@@ -5,26 +5,33 @@
       [text]="stepMappingService.progressText()"
     />
 
-    <app-selected-packages
-      [text]="stepMappingService.selectedPackagesText()"
-      [parts]="selectedPartsList()"
-      [selectedPackages]="stepMappingService.selectedPackages()"
-      (partClick)="onPartClick($event)"
-    />
-
-    @if (previousStepPartsList().length > 0) {
-      <div class="bg-gradient-to-r from-blue-400 to-indigo-400 text-white p-2.5 rounded-lg mb-3">
-        <h3 class="mb-1.5 font-semibold text-sm">📋 Poprzedni krok ({{ stepMappingService.currentStep() - 1 }})</h3>
-        <div class="grid grid-cols-[repeat(auto-fill,minmax(75px,1fr))] gap-1.5 mt-2 opacity-90">
-          @for (part of previousStepPartsList(); track part.pkg) {
-            <app-part-item
-              [part]="part"
-              [isSelected]="false"
-            />
-          }
-        </div>
+    <div class="flex gap-3 mb-3">
+      <!-- Wybrane pakiety - lewa strona 50% -->
+      <div class="w-1/2">
+        <app-selected-packages
+          [text]="stepMappingService.selectedPackagesText()"
+          [parts]="selectedPartsList()"
+          [selectedPackages]="stepMappingService.selectedPackages()"
+          (partClick)="onPartClick($event)"
+        />
       </div>
-    }
+
+      <!-- Poprzedni krok - prawa strona 50% -->
+      <div class="w-1/2">
+        @if (previousStepPartsList().length > 0) {
+          <div class="bg-gradient-to-r from-blue-400 to-indigo-400 text-white p-2.5 rounded-lg h-full">
+            <h3 class="mb-1.5 font-semibold text-sm text-right">
+              📋 Poprzedni krok ({{ stepMappingService.currentStep() - 1 }})
+            </h3>
+            <div class="grid grid-cols-[repeat(auto-fill,minmax(75px,1fr))] gap-1.5 mt-2 opacity-90">
+              @for (part of previousStepPartsList(); track part.pkg) {
+                <app-part-item [part]="part" [isSelected]="false" />
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </div>
 
     <app-controls
       [currentStep]="stepMappingService.currentStep()"
