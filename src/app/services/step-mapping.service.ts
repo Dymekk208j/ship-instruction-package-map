@@ -29,7 +29,24 @@ export class StepMappingService {
   });
 
   constructor() {
-    this.loadProgress();
+    // Dane będą załadowane przez APP_INITIALIZER
+  }
+
+  async init(): Promise<void> {
+    const [mapping, currentStep, selectedPackages, lastSaved] = await Promise.all([
+      this.db.getStepMappingAsync(),
+      this.db.getCurrentStepAsync(),
+      this.db.getSelectedPackagesAsync(),
+      this.db.getLastSavedAsync(),
+    ]);
+
+    this.stepMapping.set(mapping);
+    this.currentStep.set(currentStep);
+    this.selectedPackages.set(new Set(selectedPackages));
+
+    if (lastSaved) {
+      console.log('✅ Załadowano dane z Supabase:', lastSaved);
+    }
   }
 
   togglePackage(pkg: number): void {
@@ -43,7 +60,7 @@ export class StepMappingService {
     this.saveProgress();
   }
 
-  nextStep(): void {
+  async nextStep(): Promise<void> {
     if (this.selectedPackages().size > 0) {
       const mapping = { ...this.stepMapping() };
       const packages = Array.from(this.selectedPackages()).sort((a, b) => a - b);
@@ -51,25 +68,25 @@ export class StepMappingService {
       this.stepMapping.set(mapping);
 
       // Zapisz do bazy
-      this.db.setStepMapping(this.currentStep(), packages);
-      this.saveProgress();
+      await this.db.setStepMapping(this.currentStep(), packages);
+      await this.saveProgress();
     }
 
     const next = this.currentStep() + 1;
     if (next <= this.TOTAL_STEPS) {
       this.currentStep.set(next);
-      this.saveProgress();
+      await this.saveProgress();
     }
 
     this.selectedPackages.set(new Set());
-    this.db.clearSelectedPackages();
+    await this.db.clearSelectedPackages();
   }
 
-  previousStep(): void {
+  async previousStep(): Promise<void> {
     const prev = this.currentStep() - 1;
     if (prev >= 1) {
       this.currentStep.set(prev);
-      this.saveProgress();
+      await this.saveProgress();
 
       // Load previous selections if they exist
       const mapping = this.stepMapping();
@@ -81,31 +98,19 @@ export class StepMappingService {
     }
   }
 
-  clearCurrent(): void {
+  async clearCurrent(): Promise<void> {
     this.selectedPackages.set(new Set());
-    this.db.clearSelectedPackages();
-    this.saveProgress();
+    await this.db.clearSelectedPackages();
+    await this.saveProgress();
   }
 
-  downloadResults(): void {
-    // Eksport bazy danych SQLite
-    this.db.exportDatabase();
+  async downloadResults(): Promise<void> {
+    // Eksport bazy danych
+    await this.db.exportDatabase();
   }
 
-  private saveProgress(): void {
-    this.db.setCurrentStep(this.currentStep());
-    this.db.setSelectedPackages(Array.from(this.selectedPackages()));
-  }
-
-  private loadProgress(): void {
-    // Baza jest już zainicjalizowana przez APP_INITIALIZER
-    this.stepMapping.set(this.db.getStepMapping());
-    this.currentStep.set(this.db.getCurrentStep());
-    this.selectedPackages.set(new Set(this.db.getSelectedPackages()));
-
-    const lastSaved = this.db.getLastSaved();
-    if (lastSaved) {
-      console.log('✅ Załadowano dane z bazy SQLite:', lastSaved);
-    }
+  private async saveProgress(): Promise<void> {
+    await this.db.setCurrentStep(this.currentStep());
+    await this.db.setSelectedPackages(Array.from(this.selectedPackages()));
   }
 }

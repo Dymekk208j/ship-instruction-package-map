@@ -1,189 +1,216 @@
 import { Injectable } from '@angular/core';
-import initSqlJs, { Database } from 'sql.js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 @Injectable({
   providedIn: 'root',
 })
 export class DatabaseService {
-  private db: Database | null = null;
+  private supabase: SupabaseClient;
   private initialized = false;
+  private userId: string = 'default_user'; // W produkcji użyj prawdziwej autentykacji
+
+  constructor() {
+    // Supabase configuration - wyciągnięte z connection string
+    const supabaseUrl = 'https://kizsruvrwfbqtajbndop.supabase.co';
+    const supabaseAnonKey =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtpenNydXZyd2ZicXRhamJuZG9wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MjEzNTAsImV4cCI6MjA4NjM5NzM1MH0.RLw5z96JlQqpqXxxS2NxW9BPz2uV7iBhvnYRWtvERvU'; // TODO: Zamień na prawdziwy anon key z Supabase dashboard
+
+    this.supabase = createClient(supabaseUrl, supabaseAnonKey);
+  }
 
   async init(): Promise<void> {
     if (this.initialized) return;
 
     try {
-      const SQL = await initSqlJs({
-        locateFile: (file: string) => `https://sql.js.org/dist/${file}`,
-      });
-
-      // Sprawdź czy jest zapisana baza w localStorage
-      const savedDb = localStorage.getItem('lego_sqlite_db');
-      if (savedDb) {
-        const uint8Array = new Uint8Array(
-          atob(savedDb)
-            .split('')
-            .map((c) => c.charCodeAt(0)),
-        );
-        this.db = new SQL.Database(uint8Array);
-        console.log('✅ Załadowano bazę danych z localStorage');
-      } else {
-        this.db = new SQL.Database();
-        this.createTables();
-        console.log('📂 Utworzono nową bazę danych');
-      }
-
+      await this.createTablesIfNeeded();
+      await this.ensureUserState();
       this.initialized = true;
+      console.log('✅ Połączono z Supabase');
     } catch (error) {
-      console.error('❌ Błąd inicjalizacji bazy danych:', error);
+      console.error('❌ Błąd inicjalizacji Supabase:', error);
       throw error;
     }
   }
 
-  private createTables(): void {
-    if (!this.db) return;
+  private async createTablesIfNeeded(): Promise<void> {
+    // Tabele powinny być utworzone przez Supabase SQL Editor:
+    /*
+    CREATE TABLE IF NOT EXISTS app_state (
+      user_id TEXT PRIMARY KEY,
+      current_step INTEGER NOT NULL,
+      last_saved TIMESTAMP NOT NULL DEFAULT NOW()
+    );
 
-    this.db.run(`
-      CREATE TABLE IF NOT EXISTS app_state (
-        id INTEGER PRIMARY KEY,
-        current_step INTEGER NOT NULL,
-        last_saved TEXT NOT NULL
-      )
-    `);
+    CREATE TABLE IF NOT EXISTS step_mapping (
+      user_id TEXT NOT NULL,
+      step_number INTEGER NOT NULL,
+      packages JSONB NOT NULL,
+      PRIMARY KEY (user_id, step_number)
+    );
 
-    this.db.run(`
-      CREATE TABLE IF NOT EXISTS step_mapping (
-        step_number INTEGER PRIMARY KEY,
-        packages TEXT NOT NULL
-      )
-    `);
-
-    this.db.run(`
-      CREATE TABLE IF NOT EXISTS selected_packages (
-        package_number INTEGER PRIMARY KEY
-      )
-    `);
-
-    // Wstaw domyślny stan
-    this.db.run('INSERT INTO app_state (id, current_step, last_saved) VALUES (1, 1, ?)', [
-      new Date().toISOString(),
-    ]);
-
-    this.save();
+    CREATE TABLE IF NOT EXISTS selected_packages (
+      user_id TEXT NOT NULL,
+      package_number INTEGER NOT NULL,
+      PRIMARY KEY (user_id, package_number)
+    );
+    */
   }
 
-  private save(): void {
-    if (!this.db) return;
+  private async ensureUserState(): Promise<void> {
+    const { data, error } = await this.supabase
+      .from('app_state')
+      .select('*')
+      .eq('user_id', this.userId)
+      .single();
 
-    try {
-      const data = this.db.export();
-      const base64 = btoa(String.fromCharCode(...data));
-      localStorage.setItem('lego_sqlite_db', base64);
-    } catch (error) {
-      console.error('❌ Błąd zapisu bazy:', error);
+    if (!data && !error) {
+      // Utwórz domyślny stan
+      await this.supabase.from('app_state').insert({
+        user_id: this.userId,
+        current_step: 1,
+        last_saved: new Date().toISOString(),
+      });
     }
   }
 
   getCurrentStep(): number {
-    if (!this.db) return 1;
-
-    const result = this.db.exec('SELECT current_step FROM app_state WHERE id = 1');
-    if (result.length > 0 && result[0].values.length > 0) {
-      return result[0].values[0][0] as number;
-    }
+    // Metoda synchroniczna - użyj getStepAsync() dla właściwego ładowania
     return 1;
   }
 
-  setCurrentStep(step: number): void {
-    if (!this.db) return;
+  async getCurrentStepAsync(): Promise<number> {
+    const { data, error } = await this.supabase
+      .from('app_state')
+      .select('current_step')
+      .eq('user_id', this.userId)
+      .single();
 
-    this.db.run('UPDATE app_state SET current_step = ?, last_saved = ? WHERE id = 1', [
-      step,
-      new Date().toISOString(),
-    ]);
-    this.save();
+    if (error || !data) return 1;
+    return data.current_step;
+  }
+
+  async setCurrentStep(step: number): Promise<void> {
+    await this.supabase
+      .from('app_state')
+      .update({
+        current_step: step,
+        last_saved: new Date().toISOString(),
+      })
+      .eq('user_id', this.userId);
   }
 
   getStepMapping(): Record<number, number[]> {
-    if (!this.db) return {};
+    // Metoda synchroniczna - użyj getStepMappingAsync() dla właściwego ładowania
+    return {};
+  }
 
-    const result = this.db.exec('SELECT step_number, packages FROM step_mapping');
-    if (result.length === 0) return {};
+  async getStepMappingAsync(): Promise<Record<number, number[]>> {
+    const { data, error } = await this.supabase
+      .from('step_mapping')
+      .select('step_number, packages')
+      .eq('user_id', this.userId);
+
+    if (error || !data) return {};
 
     const mapping: Record<number, number[]> = {};
-    result[0].values.forEach((row: any[]) => {
-      const step = row[0] as number;
-      const packages = JSON.parse(row[1] as string) as number[];
-      mapping[step] = packages;
+    data.forEach((row: any) => {
+      mapping[row.step_number] = row.packages;
     });
 
     return mapping;
   }
 
-  setStepMapping(step: number, packages: number[]): void {
-    if (!this.db) return;
-
-    this.db.run('INSERT OR REPLACE INTO step_mapping (step_number, packages) VALUES (?, ?)', [
-      step,
-      JSON.stringify(packages),
-    ]);
-    this.save();
+  async setStepMapping(step: number, packages: number[]): Promise<void> {
+    await this.supabase.from('step_mapping').upsert(
+      {
+        user_id: this.userId,
+        step_number: step,
+        packages: packages,
+      },
+      { onConflict: 'user_id,step_number' },
+    );
   }
 
-  deleteStepMapping(step: number): void {
-    if (!this.db) return;
-
-    this.db.run('DELETE FROM step_mapping WHERE step_number = ?', [step]);
-    this.save();
+  async deleteStepMapping(step: number): Promise<void> {
+    await this.supabase
+      .from('step_mapping')
+      .delete()
+      .eq('user_id', this.userId)
+      .eq('step_number', step);
   }
 
   getSelectedPackages(): number[] {
-    if (!this.db) return [];
-
-    const result = this.db.exec(
-      'SELECT package_number FROM selected_packages ORDER BY package_number',
-    );
-    if (result.length === 0) return [];
-
-    return result[0].values.map((row: any[]) => row[0] as number);
+    // Metoda synchroniczna - użyj getSelectedPackagesAsync() dla właściwego ładowania
+    return [];
   }
 
-  setSelectedPackages(packages: number[]): void {
-    if (!this.db) return;
+  async getSelectedPackagesAsync(): Promise<number[]> {
+    const { data, error } = await this.supabase
+      .from('selected_packages')
+      .select('package_number')
+      .eq('user_id', this.userId)
+      .order('package_number');
 
-    this.db.run('DELETE FROM selected_packages');
-    packages.forEach((pkg) => {
-      this.db!.run('INSERT INTO selected_packages (package_number) VALUES (?)', [pkg]);
-    });
-    this.save();
+    if (error || !data) return [];
+
+    return data.map((row: any) => row.package_number);
   }
 
-  clearSelectedPackages(): void {
-    if (!this.db) return;
+  async setSelectedPackages(packages: number[]): Promise<void> {
+    // Usuń wszystkie istniejące
+    await this.supabase.from('selected_packages').delete().eq('user_id', this.userId);
 
-    this.db.run('DELETE FROM selected_packages');
-    this.save();
+    // Wstaw nowe
+    if (packages.length > 0) {
+      const rows = packages.map((pkg) => ({
+        user_id: this.userId,
+        package_number: pkg,
+      }));
+      await this.supabase.from('selected_packages').insert(rows);
+    }
   }
 
-  exportDatabase(): void {
-    if (!this.db) return;
+  async clearSelectedPackages(): Promise<void> {
+    await this.supabase.from('selected_packages').delete().eq('user_id', this.userId);
+  }
 
-    const data = this.db.export();
-    const blob = new Blob([data.buffer as ArrayBuffer], { type: 'application/x-sqlite3' });
+  async exportDatabase(): Promise<void> {
+    // Eksport wszystkich danych jako JSON
+    const [appState, stepMapping, selectedPackages] = await Promise.all([
+      this.supabase.from('app_state').select('*').eq('user_id', this.userId),
+      this.supabase.from('step_mapping').select('*').eq('user_id', this.userId),
+      this.supabase.from('selected_packages').select('*').eq('user_id', this.userId),
+    ]);
+
+    const exportData = {
+      app_state: appState.data,
+      step_mapping: stepMapping.data,
+      selected_packages: selectedPackages.data,
+      exported_at: new Date().toISOString(),
+    };
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `lego_mapowanie_${new Date().toISOString().split('T')[0]}.db`;
+    a.download = `lego_mapowanie_${new Date().toISOString().split('T')[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
   }
 
   getLastSaved(): string | null {
-    if (!this.db) return null;
-
-    const result = this.db.exec('SELECT last_saved FROM app_state WHERE id = 1');
-    if (result.length > 0 && result[0].values.length > 0) {
-      return result[0].values[0][0] as string;
-    }
+    // Metoda synchroniczna - użyj getLastSavedAsync() dla właściwego ładowania
     return null;
+  }
+
+  async getLastSavedAsync(): Promise<string | null> {
+    const { data, error } = await this.supabase
+      .from('app_state')
+      .select('last_saved')
+      .eq('user_id', this.userId)
+      .single();
+
+    if (error || !data) return null;
+    return data.last_saved;
   }
 }

@@ -5,11 +5,15 @@ import {
 } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { DatabaseService } from './services/database.service';
+import { StepMappingService } from './services/step-mapping.service';
 
 import { routes } from './app.routes';
 
-export function initializeDatabase(dbService: DatabaseService) {
-  return () => dbService.init();
+export function initializeApp(dbService: DatabaseService, stepMappingService: StepMappingService) {
+  return async () => {
+    await dbService.init();
+    await stepMappingService.init();
+  };
 }
 
 export const appConfig: ApplicationConfig = {
@@ -18,8 +22,8 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     {
       provide: APP_INITIALIZER,
-      useFactory: initializeDatabase,
-      deps: [DatabaseService],
+      useFactory: initializeApp,
+      deps: [DatabaseService, StepMappingService],
       multi: true,
     },
   ],
