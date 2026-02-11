@@ -12,6 +12,20 @@
       (partClick)="onPartClick($event)"
     />
 
+    @if (previousStepPartsList().length > 0) {
+      <div class="bg-gradient-to-r from-blue-400 to-indigo-400 text-white p-2.5 rounded-lg mb-3">
+        <h3 class="mb-1.5 font-semibold text-sm">📋 Poprzedni krok ({{ stepMappingService.currentStep() - 1 }})</h3>
+        <div class="grid grid-cols-[repeat(auto-fill,minmax(75px,1fr))] gap-1.5 mt-2 opacity-90">
+          @for (part of previousStepPartsList(); track part.pkg) {
+            <app-part-item
+              [part]="part"
+              [isSelected]="false"
+            />
+          }
+        </div>
+      </div>
+    }
+
     <app-controls
       [currentStep]="stepMappingService.currentStep()"
       (nextStep)="onNextStep()"

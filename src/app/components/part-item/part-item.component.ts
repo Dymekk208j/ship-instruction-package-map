@@ -11,6 +11,7 @@ export class PartItemComponent {
   part = input.required<Part>();
   isSelected = input.required<boolean>();
   useLargeImage = input<boolean>(false);
+  showDescription = input<boolean>(false);
   partClick = output<number>();
 
   private previewElement: HTMLElement | null = null;

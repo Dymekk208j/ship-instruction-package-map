@@ -5,6 +5,7 @@ import { ControlsComponent } from './components/controls/controls.component';
 import { PartsListComponent } from './components/parts-list/parts-list.component';
 import { HistoryComponent } from './components/history/history.component';
 import { StepPreviewComponent } from './components/step-preview/step-preview.component';
+import { PartItemComponent } from './components/part-item/part-item.component';
 import { PartsService } from './services/parts.service';
 import { StepMappingService } from './services/step-mapping.service';
 
@@ -17,6 +18,7 @@ import { StepMappingService } from './services/step-mapping.service';
     PartsListComponent,
     HistoryComponent,
     StepPreviewComponent,
+    PartItemComponent,
   ],
   templateUrl: './app.html',
 })
@@ -32,6 +34,18 @@ export class App {
   selectedPartsList = computed(() => {
     const selectedPkgs = Array.from(this.stepMappingService.selectedPackages());
     return this.partsService.getAllParts().filter((part) => selectedPkgs.includes(part.pkg));
+  });
+
+  previousStepPartsList = computed(() => {
+    const currentStep = this.stepMappingService.currentStep();
+    const prevStep = currentStep - 1;
+    if (prevStep < 1) return [];
+
+    const mapping = this.stepMappingService.stepMapping();
+    const prevPackages = mapping[prevStep];
+    if (!prevPackages) return [];
+
+    return this.partsService.getAllParts().filter((part) => prevPackages.includes(part.pkg));
   });
 
   onSearchChange(event: Event): void {
