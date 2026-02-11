@@ -1,3 +1,26 @@
-/* You can add global styles to this file, and also import other style files */
+@import 'tailwindcss';
 
-@import "tailwindcss";
+body {
+  @apply min-h-screen bg-linear-to-br from-[#667eea] to-[#764ba2] p-5;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Podgląd dużych obrazków - renderowany w body */
+.large-preview-container {
+  position: fixed;
+  z-index: 999999;
+  pointer-events: none;
+  display: block;
+}
+
+.large-preview-container img {
+  width: 400px;
+  height: 400px;
+  object-fit: contain;
+  border: 4px solid #333;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  background: white;
+  padding: 15px;
+  display: block;
+}

@@ -1,0 +1,16 @@
+<div class="bg-gradient-to-r from-pink-400 to-red-400 text-white p-3 rounded-lg mb-3">
+  <h3 class="mb-2 font-semibold text-sm">Wybrane pakiety dla bieżącego kroku: {{ text() }}</h3>
+  @if (parts().length > 0) {
+    <div class="grid grid-cols-[repeat(auto-fill,minmax(90px,1fr))] gap-2 mt-2">
+      @for (part of parts(); track part.pkg) {
+        <app-part-item
+          [part]="part"
+          [isSelected]="selectedPackages().has(part.pkg)"
+          (partClick)="partClick.emit($event)"
+        />
+      }
+    </div>
+  } @else {
+    <div class="text-sm italic opacity-80">Brak wybranych pakietów</div>
+  }
+</div>

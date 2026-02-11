@@ -1,0 +1,38 @@
+<div
+  [class]="
+    isSelected()
+      ? 'p-1.5 bg-green-500 text-white border-3 border-green-600 rounded-lg cursor-pointer transition-all duration-200 flex flex-col items-center text-center hover:bg-gray-100 hover:scale-105 hover:shadow-lg shadow-[0_0_15px_rgba(76,175,80,0.5)]'
+      : 'p-1.5 bg-white border-3 rounded-lg cursor-pointer transition-all duration-200 flex flex-col items-center text-center hover:bg-gray-100 hover:scale-105 hover:shadow-lg'
+  "
+  (click)="partClick.emit(part().pkg)"
+  (mouseenter)="onMouseEnter($event)"
+  (mousemove)="onMouseMove($event)"
+  (mouseleave)="onMouseLeave()"
+>
+  <span class="part-image-wrapper">
+    <img
+      [src]="getImageUrl()"
+      [alt]="part().name"
+      [class]="
+        useLargeImage() ? 'w-full max-w-md object-contain mb-1' : 'w-16 h-16 object-contain mb-1'
+      "
+      (error)="onImageError($event)"
+    />
+  </span>
+
+  <div
+    [class]="
+      isSelected()
+        ? 'bg-green-800 text-white py-0.5 px-2 rounded-xl font-bold text-xs mt-1'
+        : 'bg-[#667eea] text-white py-0.5 px-2 rounded-xl font-bold text-xs mt-1'
+    "
+  >
+    Pakiet {{ part().pkg }}
+  </div>
+
+  <div
+    [class]="isSelected() ? 'text-[9px] text-white/80 mt-0.5' : 'text-[9px] text-gray-600 mt-0.5'"
+  >
+    #{{ part().num }}
+  </div>
+</div>

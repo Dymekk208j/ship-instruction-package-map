@@ -1,0 +1,35 @@
+<div class="flex gap-2 mb-3 flex-wrap items-center">
+  <div
+    class="bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white py-2 px-4 rounded-lg text-lg font-bold flex-shrink-0"
+  >
+    Krok {{ currentStep() }}
+  </div>
+
+  <button
+    class="py-2 px-4 text-sm border-none rounded-lg cursor-pointer font-semibold transition-all duration-300 bg-blue-500 text-white hover:bg-blue-600 hover:-translate-y-0.5"
+    (click)="previousStep.emit()"
+  >
+    ⬅️ Poprzedni krok
+  </button>
+
+  <button
+    class="py-2 px-4 text-sm border-none rounded-lg cursor-pointer font-semibold transition-all duration-300 bg-green-500 text-white hover:bg-green-600 hover:-translate-y-0.5"
+    (click)="nextStep.emit()"
+  >
+    Następny krok ➡️
+  </button>
+
+  <button
+    class="py-2 px-4 text-sm border-none rounded-lg cursor-pointer font-semibold transition-all duration-300 bg-blue-500 text-white hover:bg-blue-600 hover:-translate-y-0.5"
+    (click)="download.emit()"
+  >
+    💾 Pobierz wyniki
+  </button>
+
+  <button
+    class="py-2 px-4 text-sm border-none rounded-lg cursor-pointer font-semibold transition-all duration-300 bg-red-500 text-white hover:bg-red-600 hover:-translate-y-0.5"
+    (click)="clearCurrent.emit()"
+  >
+    🗑️ Wyczyść zaznaczenia
+  </button>
+</div>

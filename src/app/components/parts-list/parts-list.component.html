@@ -1,0 +1,17 @@
+<div class="border-2 border-gray-300 rounded-lg p-3 bg-gray-50">
+  <h2 class="text-gray-800 mb-2 pb-1.5 border-b-2 border-[#667eea] text-base font-semibold">
+    📦 Lista wszystkich części (kliknij aby zaznaczyć) - Wyświetlane: {{ parts().length }}
+  </h2>
+  <div
+    class="overflow-y-auto bg-white rounded-lg p-2 grid grid-cols-[repeat(auto-fill,minmax(90px,1fr))] gap-2"
+    [style.max-height]="'calc(100vh - 250px)'"
+  >
+    @for (part of parts(); track part.pkg) {
+      <app-part-item
+        [part]="part"
+        [isSelected]="selectedPackages().has(part.pkg)"
+        (partClick)="partClick.emit($event)"
+      />
+    }
+  </div>
+</div>
