@@ -42,20 +42,20 @@ export class App {
     );
   }
 
-  onPartClick(pkg: number): void {
-    this.stepMappingService.togglePackage(pkg);
+  async onPartClick(pkg: number): Promise<void> {
+    await this.stepMappingService.togglePackage(pkg);
   }
 
-  onNextStep(): void {
-    this.stepMappingService.nextStep();
+  async onNextStep(): Promise<void> {
+    await this.stepMappingService.nextStep();
   }
 
-  onPreviousStep(): void {
-    this.stepMappingService.previousStep();
+  async onPreviousStep(): Promise<void> {
+    await this.stepMappingService.previousStep();
   }
 
-  onClearCurrent(): void {
-    this.stepMappingService.clearCurrent();
+  async onClearCurrent(): Promise<void> {
+    await this.stepMappingService.clearCurrent();
   }
 
   onDownload(): void {

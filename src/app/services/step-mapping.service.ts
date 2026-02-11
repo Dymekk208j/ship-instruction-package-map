@@ -49,7 +49,7 @@ export class StepMappingService {
     }
   }
 
-  togglePackage(pkg: number): void {
+  async togglePackage(pkg: number): Promise<void> {
     const current = new Set(this.selectedPackages());
     if (current.has(pkg)) {
       current.delete(pkg);
@@ -57,7 +57,7 @@ export class StepMappingService {
       current.add(pkg);
     }
     this.selectedPackages.set(current);
-    this.saveProgress();
+    await this.saveProgress();
   }
 
   async nextStep(): Promise<void> {
