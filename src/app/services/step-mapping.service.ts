@@ -100,7 +100,6 @@ export class StepMappingService {
 
   async clearCurrent(): Promise<void> {
     this.selectedPackages.set(new Set());
-    await this.db.clearSelectedPackages();
     await this.saveProgress();
   }
 
